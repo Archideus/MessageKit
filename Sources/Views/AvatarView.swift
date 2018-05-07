@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,27 +24,25 @@
 
 import Foundation
 
-open class AvatarView: UIView {
+open class AvatarView: UIImageView {
 
     // MARK: - Properties
-
-    open var avatar: Avatar = Avatar()
-
-    open var imageView = UIImageView()
-
-    public var image: UIImage? {
-        return imageView.image
+    
+    open var initials: String? {
+        didSet {
+            setImageFrom(initials: initials)
+        }
     }
 
     open var placeholderFont: UIFont = UIFont.preferredFont(forTextStyle: .caption1) {
         didSet {
-            set(avatar: avatar)
+            setImageFrom(initials: initials)
         }
     }
 
     open var placeholderTextColor: UIColor = .white {
         didSet {
-            set(avatar: avatar)
+            setImageFrom(initials: initials)
         }
     }
 
@@ -61,14 +59,12 @@ open class AvatarView: UIView {
     // MARK: - Overridden Properties
     open override var frame: CGRect {
         didSet {
-            imageView.frame = bounds
             setCorner(radius: self.radius)
         }
     }
 
     open override var bounds: CGRect {
         didSet {
-            imageView.frame = bounds
             setCorner(radius: self.radius)
         }
     }
@@ -81,6 +77,11 @@ open class AvatarView: UIView {
 
     convenience public init() {
         self.init(frame: .zero)
+    }
+    
+    private func setImageFrom(initials: String?) {
+        guard let initials = initials else { return }
+        image = getImageFrom(initials: initials)
     }
 
     private func getImageFrom(initials: String) -> UIImage {
@@ -95,8 +96,9 @@ open class AvatarView: UIView {
 
         //// Text Drawing
         let textRect = calculateTextRect(outerViewWidth: width, outerViewHeight: height)
+        let initialsText = NSAttributedString(string: initials, attributes: [.font: font])
         if adjustsFontSizeToFitWidth,
-            initials.width(considering: textRect.height, and: font) > textRect.width {
+            initialsText.width(considering: textRect.height) > textRect.width {
             let newFontSize = calculateFontSize(text: initials, font: font, width: textRect.width, height: textRect.height)
             font = placeholderFont.withSize(newFontSize)
         }
@@ -108,7 +110,7 @@ open class AvatarView: UIView {
         let textTextHeight: CGFloat = initials.boundingRect(with: CGSize(width: textRect.width, height: CGFloat.infinity), options: .usesLineFragmentOrigin, attributes: textFontAttributes, context: nil).height
         context.saveGState()
         context.clip(to: textRect)
-        initials.draw(in: CGRect(x: textRect.minX, y: textRect.minY + (textRect.height - textTextHeight) / 2, width: textRect.width, height: textTextHeight), withAttributes: textFontAttributes)
+        initials.draw(in: CGRect(textRect.minX, textRect.minY + (textRect.height - textTextHeight) / 2, textRect.width, textTextHeight), withAttributes: textFontAttributes)
         context.restoreGState()
         guard let renderedImage = UIGraphicsGetImageFromCurrentImageContext() else { assertionFailure("Could not create image from context"); return UIImage()}
         return renderedImage
@@ -118,7 +120,8 @@ open class AvatarView: UIView {
      Recursively find the biggest size to fit the text with a given width and height
      */
     private func calculateFontSize(text: String, font: UIFont, width: CGFloat, height: CGFloat) -> CGFloat {
-        if text.width(considering: height, and: font) > width {
+        let attributedText = NSAttributedString(string: text, attributes: [.font: font])
+        if attributedText.width(considering: height) > width {
             let newFont = font.withSize(font.pointSize - 1)
             if newFont.pointSize > minimumFontSize {
                 return font.pointSize
@@ -146,7 +149,7 @@ open class AvatarView: UIView {
         let startX = (outerViewWidth - w)/2
         let startY = (outerViewHeight - h)/2
         // In case the font exactly fits to the region, put 2 pixel both left and right
-        return CGRect(x: startX+2, y: startY, width: w-4, height: h)
+        return CGRect(startX+2, startY, w-4, h)
     }
 
     required public init?(coder aDecoder: NSCoder) {
@@ -160,17 +163,17 @@ open class AvatarView: UIView {
         contentMode = .scaleAspectFill
         layer.masksToBounds = true
         clipsToBounds = true
-        imageView.contentMode = .scaleAspectFill
-        imageView.frame = frame
-        addSubview(imageView)
-        imageView.image = avatar.image ?? getImageFrom(initials: avatar.initials)
         setCorner(radius: nil)
     }
 
     // MARK: - Open setters
-
+    
     open func set(avatar: Avatar) {
-        imageView.image = avatar.image ?? getImageFrom(initials: avatar.initials)
+        if let image = avatar.image {
+            self.image = image
+        } else {
+            initials = avatar.initials
+        }
     }
 
     open func setCorner(radius: CGFloat?) {

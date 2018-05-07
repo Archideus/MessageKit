@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,23 +26,31 @@ import UIKit
 import MessageKit
 import MapKit
 
-class ConversationViewController: MessagesViewController {
+internal class ConversationViewController: MessagesViewController {
 
-    var messageList: [MockMessage] = [] {
-        didSet {
-            DispatchQueue.main.async {
-                self.messagesCollectionView.reloadData()
-            }
-        }
-    }
+    let refreshControl = UIRefreshControl()
+    
+    var messageList: [MockMessage] = []
+    
+    var isTyping = false
+    
+    lazy var formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        return formatter
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+    
+        let messagesToFetch = UserDefaults.standard.mockMessagesCount()
+        
         DispatchQueue.global(qos: .userInitiated).async {
-            SampleData.shared.getMessages(count: 10) { messages in
+            SampleData.shared.getMessages(count: messagesToFetch) { messages in
                 DispatchQueue.main.async {
                     self.messageList = messages
+                    self.messagesCollectionView.reloadData()
+                    self.messagesCollectionView.scrollToBottom()
                 }
             }
         }
@@ -52,14 +60,63 @@ class ConversationViewController: MessagesViewController {
         messagesCollectionView.messagesDisplayDelegate = self
         messagesCollectionView.messageCellDelegate = self
         messageInputBar.delegate = self
-        messageInputBar.sendButton.tintColor = UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
-        scrollsToBottomOnFirstLayout = true //default false
-        scrollsToBottomOnKeybordBeginsEditing = true // default false
 
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(named: "ic_keyboard"),
-                                                            style: .plain,
-                                                            target: self,
-                                                            action: #selector(handleKeyboardButton))
+        messageInputBar.sendButton.tintColor = UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
+        scrollsToBottomOnKeybordBeginsEditing = true // default false
+        maintainPositionOnKeyboardFrameChanged = true // default false
+        
+        messagesCollectionView.addSubview(refreshControl)
+        refreshControl.addTarget(self, action: #selector(ConversationViewController.loadMoreMessages), for: .valueChanged)
+        
+        navigationItem.rightBarButtonItems = [
+            UIBarButtonItem(image: UIImage(named: "ic_keyboard"),
+                            style: .plain,
+                            target: self,
+                            action: #selector(ConversationViewController.handleKeyboardButton)),
+            UIBarButtonItem(image: UIImage(named: "ic_typing"),
+                            style: .plain,
+                            target: self,
+                            action: #selector(ConversationViewController.handleTyping))
+        ]
+    }
+    
+    @objc func handleTyping() {
+        
+        defer {
+            isTyping = !isTyping
+        }
+        
+        if isTyping {
+            
+            messageInputBar.topStackView.arrangedSubviews.first?.removeFromSuperview()
+            messageInputBar.topStackViewPadding = .zero
+            
+        } else {
+            
+            let label = UILabel()
+            label.text = "nathan.tannar is typing..."
+            label.font = UIFont.boldSystemFont(ofSize: 16)
+            messageInputBar.topStackView.addArrangedSubview(label)
+            messageInputBar.topStackViewPadding.top = 6
+            messageInputBar.topStackViewPadding.left = 12
+            
+            // The backgroundView doesn't include the topStackView. This is so things in the topStackView can have transparent backgrounds if you need it that way or another color all together
+            messageInputBar.backgroundColor = messageInputBar.backgroundView.backgroundColor
+            
+        }
+
+    }
+    
+    @objc func loadMoreMessages() {
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: DispatchTime.now() + 4) {
+            SampleData.shared.getMessages(count: 10) { messages in
+                DispatchQueue.main.async {
+                    self.messageList.insert(contentsOf: messages, at: 0)
+                    self.messagesCollectionView.reloadDataAndKeepOffset()
+                    self.refreshControl.endRefreshing()
+                }
+            }
+        }
     }
     
     @objc func handleKeyboardButton() {
@@ -93,6 +150,7 @@ class ConversationViewController: MessagesViewController {
 
     func slack() {
         defaultStyle()
+        messageInputBar.backgroundView.backgroundColor = .white
         messageInputBar.isTranslucent = false
         messageInputBar.inputTextView.backgroundColor = .clear
         messageInputBar.inputTextView.layer.borderWidth = 0
@@ -102,11 +160,9 @@ class ConversationViewController: MessagesViewController {
             },
             makeButton(named: "ic_at").onSelected {
                 $0.tintColor = UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
-                print("@ Selected")
             },
             makeButton(named: "ic_hashtag").onSelected {
                 $0.tintColor = UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1)
-                print("# Selected")
             },
             .flexibleSpace,
             makeButton(named: "ic_library").onTextViewDidChange { button, textView in
@@ -150,6 +206,7 @@ class ConversationViewController: MessagesViewController {
     func iMessage() {
         defaultStyle()
         messageInputBar.isTranslucent = false
+        messageInputBar.backgroundView.backgroundColor = .white
         messageInputBar.separatorLine.isHidden = true
         messageInputBar.inputTextView.backgroundColor = UIColor(red: 245/255, green: 245/255, blue: 245/255, alpha: 1)
         messageInputBar.inputTextView.placeholderTextColor = UIColor(red: 0.6, green: 0.6, blue: 0.6, alpha: 1)
@@ -205,8 +262,8 @@ extension ConversationViewController: MessagesDataSource {
     func currentSender() -> Sender {
         return SampleData.shared.currentSender
     }
-
-    func numberOfMessages(in messagesCollectionView: MessagesCollectionView) -> Int {
+    
+    func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
         return messageList.count
     }
 
@@ -214,20 +271,22 @@ extension ConversationViewController: MessagesDataSource {
         return messageList[indexPath.section]
     }
 
-    func avatar(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> Avatar {
-        return SampleData.shared.getAvatarFor(sender: message.sender)
-    }
-
     func cellTopLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
+        if indexPath.section % 3 == 0 {
+            return NSAttributedString(string: MessageKitDateFormatter.shared.string(from: message.sentDate), attributes: [NSAttributedStringKey.font: UIFont.boldSystemFont(ofSize: 10), NSAttributedStringKey.foregroundColor: UIColor.darkGray])
+        }
+        return nil
+    }
+    
+    func messageTopLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
         let name = message.sender.displayName
-      return NSAttributedString(string: name, attributes: [NSAttributedStringKey.font: UIFont.preferredFont(forTextStyle: .caption1)])
+        return NSAttributedString(string: name, attributes: [NSAttributedStringKey.font: UIFont.preferredFont(forTextStyle: .caption1)])
     }
 
-    func cellBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
+    func messageBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
+
         let dateString = formatter.string(from: message.sentDate)
-      return NSAttributedString(string: dateString, attributes: [NSAttributedStringKey.font: UIFont.preferredFont(forTextStyle: .caption2)])
+        return NSAttributedString(string: dateString, attributes: [NSAttributedStringKey.font: UIFont.preferredFont(forTextStyle: .caption2)])
     }
 
 }
@@ -236,14 +295,24 @@ extension ConversationViewController: MessagesDataSource {
 
 extension ConversationViewController: MessagesDisplayDelegate {
 
+    // MARK: - Text Messages
+
+    func textColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
+        return isFromCurrentSender(message: message) ? .white : .darkText
+    }
+
+    func detectorAttributes(for detector: DetectorType, and message: MessageType, at indexPath: IndexPath) -> [NSAttributedStringKey: Any] {
+        return MessageLabel.defaultAttributes
+    }
+
+    func enabledDetectors(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> [DetectorType] {
+        return [.url, .address, .phoneNumber, .date, .transitInformation]
+    }
+
     // MARK: - All Messages
     
     func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
         return isFromCurrentSender(message: message) ? UIColor(red: 69/255, green: 193/255, blue: 89/255, alpha: 1) : UIColor(red: 230/255, green: 230/255, blue: 230/255, alpha: 1)
-    }
-
-    func textColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        return isFromCurrentSender(message: message) ? .white : .darkText
     }
 
     func messageStyle(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageStyle {
@@ -251,6 +320,11 @@ extension ConversationViewController: MessagesDisplayDelegate {
         return .bubbleTail(corner, .curved)
 //        let configurationClosure = { (view: MessageContainerView) in}
 //        return .custom(configurationClosure)
+    }
+    
+    func configureAvatarView(_ avatarView: AvatarView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) {
+        let avatar = SampleData.shared.getAvatarFor(sender: message.sender)
+        avatarView.set(avatar: avatar)
     }
 
     // MARK: - Location Messages
@@ -273,47 +347,30 @@ extension ConversationViewController: MessagesDisplayDelegate {
             }, completion: nil)
         }
     }
-
-
+    
+    func snapshotOptionsForLocation(message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LocationMessageSnapshotOptions {
+        
+        return LocationMessageSnapshotOptions()
+    }
 }
 
 // MARK: - MessagesLayoutDelegate
 
 extension ConversationViewController: MessagesLayoutDelegate {
 
-    func messagePadding(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIEdgeInsets {
-        if isFromCurrentSender(message: message) {
-            return UIEdgeInsets(top: 0, left: 30, bottom: 0, right: 4)
-        } else {
-            return UIEdgeInsets(top: 0, left: 4, bottom: 0, right: 30)
+    func cellTopLabelHeight(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
+        if indexPath.section % 3 == 0 {
+            return 10
         }
+        return 0
+    }
+    
+    func messageTopLabelHeight(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
+        return 16
     }
 
-    func cellTopLabelAlignment(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LabelAlignment {
-        if isFromCurrentSender(message: message) {
-            return .messageTrailing(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10))
-        } else {
-            return .messageLeading(UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 0))
-        }
-    }
-
-    func cellBottomLabelAlignment(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LabelAlignment {
-        if isFromCurrentSender(message: message) {
-            return .messageLeading(UIEdgeInsets(top: 0, left: 10, bottom: 0, right: 0))
-        } else {
-            return .messageTrailing(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10))
-        }
-    }
-
-    func footerViewSize(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> CGSize {
-
-        return CGSize(width: messagesCollectionView.bounds.width, height: 10)
-    }
-
-    // MARK: - Location Messages
-
-    func heightForLocation(message: MessageType, at indexPath: IndexPath, with maxWidth: CGFloat, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        return 200
+    func messageBottomLabelHeight(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
+        return 16
     }
 
 }
@@ -322,19 +379,23 @@ extension ConversationViewController: MessagesLayoutDelegate {
 
 extension ConversationViewController: MessageCellDelegate {
 
-    func didTapAvatar<T>(in cell: MessageCollectionViewCell<T>) {
+    func didTapAvatar(in cell: MessageCollectionViewCell) {
         print("Avatar tapped")
     }
 
-    func didTapMessage<T>(in cell: MessageCollectionViewCell<T>) {
+    func didTapMessage(in cell: MessageCollectionViewCell) {
         print("Message tapped")
     }
 
-    func didTapTopLabel<T>(in cell: MessageCollectionViewCell<T>) {
-        print("Top label tapped")
+    func didTapCellTopLabel(in cell: MessageCollectionViewCell) {
+        print("Top cell label tapped")
+    }
+    
+    func didTapMessageTopLabel(in cell: MessageCollectionViewCell) {
+        print("Top message label tapped")
     }
 
-    func didTapBottomLabel<T>(in cell: MessageCollectionViewCell<T>) {
+    func didTapMessageBottomLabel(in cell: MessageCollectionViewCell) {
         print("Bottom label tapped")
     }
 
@@ -344,7 +405,7 @@ extension ConversationViewController: MessageCellDelegate {
 
 extension ConversationViewController: MessageLabelDelegate {
 
-    func didSelectAddress(_ addressComponents: [String : String]) {
+    func didSelectAddress(_ addressComponents: [String: String]) {
         print("Address Selected: \(addressComponents)")
     }
 
@@ -359,6 +420,10 @@ extension ConversationViewController: MessageLabelDelegate {
     func didSelectURL(_ url: URL) {
         print("URL Selected: \(url)")
     }
+    
+    func didSelectTransitInformation(_ transitInformation: [String: String]) {
+        print("TransitInformation Selected: \(transitInformation)")
+    }
 
 }
 
@@ -367,9 +432,29 @@ extension ConversationViewController: MessageLabelDelegate {
 extension ConversationViewController: MessageInputBarDelegate {
 
     func messageInputBar(_ inputBar: MessageInputBar, didPressSendButtonWith text: String) {
-        messageList.append(MockMessage(text: text, sender: currentSender(), messageId: UUID().uuidString, date: Date()))
+        
+        // Each NSTextAttachment that contains an image will count as one empty character in the text: String
+        
+        for component in inputBar.inputTextView.components {
+            
+            if let image = component as? UIImage {
+                
+                let imageMessage = MockMessage(image: image, sender: currentSender(), messageId: UUID().uuidString, date: Date())
+                messageList.append(imageMessage)
+                messagesCollectionView.insertSections([messageList.count - 1])
+                
+            } else if let text = component as? String {
+                
+                let attributedText = NSAttributedString(string: text, attributes: [.font: UIFont.systemFont(ofSize: 15), .foregroundColor: UIColor.blue])
+                
+                let message = MockMessage(attributedText: attributedText, sender: currentSender(), messageId: UUID().uuidString, date: Date())
+                messageList.append(message)
+                messagesCollectionView.insertSections([messageList.count - 1])
+            }
+            
+        }
+        
         inputBar.inputTextView.text = String()
-        messagesCollectionView.insertSections([messageList.count - 1])
         messagesCollectionView.scrollToBottom()
     }
 

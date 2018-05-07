@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@ class MessagesViewControllerTests: XCTestCase {
 
         sut = MessagesViewController()
         sut.messagesCollectionView.messagesLayoutDelegate = layoutDelegate
+        sut.messagesCollectionView.messagesDisplayDelegate = layoutDelegate
         _ = sut.view
         sut.beginAppearanceTransition(true, animated: true)
         sut.endAppearanceTransition()
@@ -59,10 +60,6 @@ class MessagesViewControllerTests: XCTestCase {
         XCTAssertTrue(sut.messagesCollectionView.collectionViewLayout is MessagesCollectionViewFlowLayout)
     }
 
-    func testMessageCollectionView_isNotNilAfterViewDidLoad() {
-        XCTAssertNotNil(sut.messageInputBar)
-    }
-
     func testMessageCollectionView_hasMessageCollectionFlowLayoutAfterViewDidLoad() {
         let layout = sut.messagesCollectionView.collectionViewLayout
 
@@ -70,56 +67,9 @@ class MessagesViewControllerTests: XCTestCase {
         XCTAssertTrue(layout is MessagesCollectionViewFlowLayout)
     }
 
-    func testMessageInputBar_isNotNilAfterViewDidLoad() {
-        XCTAssertNotNil(sut.messageInputBar)
-    }
-
-    func testViewDidLoad_shouldSetBackgroundColorToWhite() {
-        XCTAssertEqual(sut.view.backgroundColor, UIColor.white)
-    }
-
-    func testViewDidLoad_shouldAddMessageCollectionViewInSubviews() {
-        let messageColelctionViews = sut.view.subviews.filter { $0 is MessagesCollectionView }
-
-        XCTAssertEqual(messageColelctionViews.count, 1)
-    }
-
-    func testViewDidLoad_shouldSetAutomaticallyAdjustsScrollViewInsetsToFalse() {
-        XCTAssertFalse(sut.automaticallyAdjustsScrollViewInsets)
-    }
-
-    func testViewDidLoad_shouldSetCollectionViewDelegate() {
-        let delegate = sut.messagesCollectionView.delegate
-
-        XCTAssertNotNil(delegate)
-        XCTAssertTrue(delegate is MessagesViewController)
-    }
-
-    func testViewDidLoad_shouldSetCollectionViewDataSource() {
-        let dataSource = sut.messagesCollectionView.dataSource
-
-        XCTAssertNotNil(dataSource)
-        XCTAssertTrue(dataSource is MessagesViewController)
-    }
-
     func testViewDidLoad_shouldSetDelegateAndDataSourceToTheSameObject() {
         XCTAssertEqual(sut.messagesCollectionView.delegate as? MessagesViewController,
                        sut.messagesCollectionView.dataSource as? MessagesViewController)
-    }
-
-    func testShouldAutorotate_isFalse() {
-        XCTAssertFalse(sut.shouldAutorotate)
-    }
-
-    func testInputAccessoryView_shouldReturnsMessageInputBarAfterViewDidLoad() {
-        let inputAccessoryView = sut.inputAccessoryView
-
-        XCTAssertNotNil(inputAccessoryView)
-        XCTAssertEqual(inputAccessoryView, sut.messageInputBar)
-    }
-
-    func testCanBecomeFirstResponder_isTrue() {
-        XCTAssertTrue(sut.canBecomeFirstResponder)
     }
 
     func testNumberOfSectionWithoutData_isZero() {
@@ -137,7 +87,7 @@ class MessagesViewControllerTests: XCTestCase {
         sut.messagesCollectionView.reloadData()
 
         let count = sut.messagesCollectionView.numberOfSections
-        let expectedCount = messagesDataSource.numberOfMessages(in: sut.messagesCollectionView)
+        let expectedCount = messagesDataSource.numberOfSections(in: sut.messagesCollectionView)
 
         XCTAssertEqual(count, expectedCount)
     }
@@ -244,7 +194,7 @@ class MessagesViewControllerTests: XCTestCase {
 
 }
 
-private class MockLayoutDelegate: MessagesLayoutDelegate, LocationMessageLayoutDelegate, MediaMessageLayoutDelegate {
+private class MockLayoutDelegate: MessagesLayoutDelegate, MessagesDisplayDelegate {
 
     // MARK: - LocationMessageLayoutDelegate
 
@@ -254,5 +204,9 @@ private class MockLayoutDelegate: MessagesLayoutDelegate, LocationMessageLayoutD
 
     func heightForMedia(message: MessageType, at indexPath: IndexPath, with maxWidth: CGFloat, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
         return 10.0
+    }
+    
+    func snapshotOptionsForLocation(message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LocationMessageSnapshotOptions {
+        return LocationMessageSnapshotOptions()
     }
 }

@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -85,19 +85,13 @@ class MessagesDisplayDelegateTests: XCTestCase {
         XCTAssertEqual(backgroundColor, .clear)
     }
 
-    func testAvatarDefaultState() {
-        XCTAssertNotNil(sut.dataProvider.avatar(for: sut.dataProvider.messages[0],
-                                                at: IndexPath(item: 0, section: 0),
-                                                in: sut.messagesCollectionView).initials)
-    }
-
     func testCellTopLabelDefaultState() {
         XCTAssertNil(sut.dataProvider.cellTopLabelAttributedText(for: sut.dataProvider.messages[0],
                                                                  at: IndexPath(item: 0, section: 0)))
     }
 
-    func testCellBottomLabelDefaultState() {
-        XCTAssertNil(sut.dataProvider.cellBottomLabelAttributedText(for: sut.dataProvider.messages[0],
+    func testMessageBottomLabelDefaultState() {
+        XCTAssertNil(sut.dataProvider.messageBottomLabelAttributedText(for: sut.dataProvider.messages[0],
                                                                     at: IndexPath(item: 0, section: 0)))
     }
 
@@ -117,67 +111,10 @@ class MessagesDisplayDelegateTests: XCTestCase {
         XCTAssertTrue(result)
     }
 
-    func testShouldDisplayHeaderWithoutDataSource_returnsFalseForDefault() {
-        sut.messagesCollectionView.messagesDataSource = nil
-
-        XCTAssertFalse(sut.shouldDisplayHeader(for: sut.dataProvider.messages[0],
-                                               at: IndexPath(item: 0, section: 0),
-                                               in: sut.messagesCollectionView))
-    }
-
-    func testShouldDisplayHeaderForFirstMessage_returnsFalseForDefault() {
-        XCTAssertFalse(sut.shouldDisplayHeader(for: sut.dataProvider.messages[0],
-                                               at: IndexPath(item: 0, section: 0),
-                                               in: sut.messagesCollectionView))
-    }
-
-    func testShouldDisplayHeaderForMessageWithTimeIntervalSinceLastMessageGreatherThanScheduled_returnsTrue() {
-        var message = MockMessage(text: "Test", sender: sut.dataProvider.currentSender(), messageId: "003")
-        let scheduledInterval = sut.messagesCollectionView.showsDateHeaderAfterTimeInterval
-        message.sentDate = Date(timeIntervalSinceNow: scheduledInterval + 300)
-        sut.dataProvider.messages.append(message)
-
-        XCTAssertTrue(sut.shouldDisplayHeader(for: sut.dataProvider.messages[2],
-                                              at: IndexPath(item: 0, section: 1),
-                                              in: sut.messagesCollectionView))
-    }
-
-    func testShouldDisplayHeaderForMessageWithTimeIntervalSinceLastMessageEqualThanScheduled_returnsTrue() {
-        var message = MockMessage(text: "Test", sender: sut.dataProvider.currentSender(), messageId: "003")
-        let scheduledInterval = sut.messagesCollectionView.showsDateHeaderAfterTimeInterval
-        message.sentDate = Date(timeIntervalSinceNow: scheduledInterval)
-        sut.dataProvider.messages.append(message)
-
-        XCTAssertTrue(sut.shouldDisplayHeader(for: sut.dataProvider.messages[2],
-                                              at: IndexPath(item: 0, section: 1),
-                                              in: sut.messagesCollectionView))
-    }
-
-    func testShouldDisplayHeaderForMessageWithTimeIntervalSinceLastMessageLessThanScheduled_returnsFalse() {
-        var message = MockMessage(text: "Test", sender: sut.dataProvider.currentSender(), messageId: "003")
-        let scheduledInterval = sut.messagesCollectionView.showsDateHeaderAfterTimeInterval
-        message.sentDate = Date(timeIntervalSinceNow: scheduledInterval - 300)
-        sut.dataProvider.messages.append(message)
-
-        XCTAssertFalse(sut.shouldDisplayHeader(for: sut.dataProvider.messages[2],
-                                               at: IndexPath(item: 0, section: 1),
-                                               in: sut.messagesCollectionView))
-    }
-
     func testMessageHeaderView_isNotNil() {
-        let headerView = sut.messageHeaderView(for: sut.dataProvider.messages[1],
-                                               at: IndexPath(item: 0, section: 1),
-                                               in: sut.messagesCollectionView)
-
+        let indexPath = IndexPath(item: 0, section: 1)
+        let headerView = sut.messageHeaderView(for: indexPath, in: sut.messagesCollectionView)
         XCTAssertNotNil(headerView)
-    }
-
-    func testMessageFooterView_isNotNil() {
-        let footerView = sut.messageFooterView(for: sut.dataProvider.messages[1],
-                                               at: IndexPath(item: 0, section: 1),
-                                               in: sut.messagesCollectionView)
-
-        XCTAssertNotNil(footerView)
     }
 
 }
@@ -218,7 +155,8 @@ class TextMessageDisplayDelegateTests: XCTestCase {
     }
 
     func testTextColorWithoutDataSource_returnsDarkTextForDefault() {
-        sut.messagesCollectionView.messagesDataSource = nil
+        let dataSource = sut.makeDataSource()
+        sut.messagesCollectionView.messagesDataSource = dataSource
         let textColor = sut.textColor(for: sut.dataProvider.messages[1],
                                       at: IndexPath(item: 0, section: 0),
                                       in: sut.messagesCollectionView)
@@ -237,7 +175,11 @@ class TextMessageDisplayDelegateTests: XCTestCase {
 
 }
 
-private class MockMessagesViewController: MessagesViewController, MessagesDisplayDelegate, TextMessageDisplayDelegate, MessagesLayoutDelegate {
+private class MockMessagesViewController: MessagesViewController, MessagesDisplayDelegate, MessagesLayoutDelegate {
+
+    func heightForLocation(message: MessageType, at indexPath: IndexPath, with maxWidth: CGFloat, in messagesCollectionView: MessagesCollectionView) -> CGFloat {
+        return 200
+    }
 
     var dataProvider: MockMessagesDataSource!
 
@@ -245,11 +187,13 @@ private class MockMessagesViewController: MessagesViewController, MessagesDispla
         super.viewDidLoad()
 
         dataProvider = makeDataSource()
+        messagesCollectionView.messagesDisplayDelegate = self
         messagesCollectionView.messagesDataSource = dataProvider
         messagesCollectionView.messagesLayoutDelegate = self
+
     }
 
-    private func makeDataSource() -> MockMessagesDataSource {
+    fileprivate func makeDataSource() -> MockMessagesDataSource {
         let dataSource = MockMessagesDataSource()
         dataSource.messages.append(MockMessage(text: "Text 1",
                                                sender: dataSource.senders[0],
@@ -261,4 +205,7 @@ private class MockMessagesViewController: MessagesViewController, MessagesDispla
         return dataSource
     }
 
+    func snapshotOptionsForLocation(message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LocationMessageSnapshotOptions {
+        return LocationMessageSnapshotOptions()
+    }
 }

@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -151,6 +151,15 @@ class MessageStyleTests: XCTestCase {
         originalData = UIImagePNGRepresentation(MessageStyle.bubbleTailOutline(.red, .topRight, .pointedEdge).image ?? UIImage())
         testData =  UIImagePNGRepresentation(stretch(transform(image: UIImage(contentsOfFile: imagePath!)!, corner: .topRight)!).withRenderingMode(.alwaysTemplate))
         XCTAssertEqual(originalData, testData)
+    }
+
+    func testCachesIdenticalOutlineImagesFromCache() {
+        let image1 = MessageStyle.bubbleTail(.topLeft, .pointedEdge).image ?? UIImage()
+        let image2 = MessageStyle.bubbleTail(.topLeft, .pointedEdge).image ?? UIImage()
+        XCTAssertEqual(image1, image2)
+        // After clearing cache a new image instance will be loaded from disk
+        MessageStyle.bubbleImageCache.removeAllObjects()
+        XCTAssertNotEqual(image1, MessageStyle.bubbleTail(.topLeft, .pointedEdge).image)
     }
 
     private func stretch(_ image: UIImage) -> UIImage {

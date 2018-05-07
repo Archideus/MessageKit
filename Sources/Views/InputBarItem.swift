@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -317,7 +317,7 @@ open class InputBarButtonItem: UIButton {
     }
     
     /// An InputBarButtonItem that's spacing property is set to be .fixed with the width arguement
-    open static func fixedSpace(_ width: CGFloat) -> InputBarButtonItem {
+    open class func fixedSpace(_ width: CGFloat) -> InputBarButtonItem {
         let item = InputBarButtonItem()
         item.setSize(.zero, animated: false)
         item.spacing = .fixed(width)

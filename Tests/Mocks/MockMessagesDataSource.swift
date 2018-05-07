@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
  */
 
 import Foundation
+@testable import MessageKit
 
 class MockMessagesDataSource: MessagesDataSource {
 
@@ -34,7 +35,7 @@ class MockMessagesDataSource: MessagesDataSource {
         return senders[0]
     }
 
-    func numberOfMessages(in messagesCollectionView: MessagesCollectionView) -> Int {
+    func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
         return messages.count
     }
 

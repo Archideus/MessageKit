@@ -21,28 +21,24 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  SOFTWARE.
  */
-import XCTest
-@testable import MessageKit
 
-class MessageDateHeaderViewTests: XCTestCase {
+import Foundation
 
-    var view: MessageDateHeaderView!
-
-    override func setUp() {
-        super.setUp()
-        view = MessageDateHeaderView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+extension UserDefaults {
+    
+    static let messagesKey = "mockMessages"
+    
+    // MARK: - Mock Messages
+    
+    func setMockMessages(count: Int) {
+        set(count, forKey: "mockMessages")
+        synchronize()
     }
-
-    override func tearDown() {
-        view = nil
-        super.tearDown()
+    
+    func mockMessagesCount() -> Int {
+        if let value = object(forKey: "mockMessages") as? Int {
+            return value
+        }
+        return 20
     }
-
-    func testInit() {
-        XCTAssertTrue(view.subviews.contains(view.dateLabel))
-        XCTAssertEqual(view.dateLabel.textAlignment, .center)
-        XCTAssertEqual(view.dateLabel.font, .boldSystemFont(ofSize: 10))
-        XCTAssertEqual(view.dateLabel.textColor, UIColor.darkGray)
-    }
-
 }

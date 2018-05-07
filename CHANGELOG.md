@@ -6,6 +6,293 @@ The changelog for `MessageKit`. Also see the [releases](https://github.com/Messa
 
 ## Upcoming release
 
+## [[Prerelease] 1.0.0-beta.1](https://github.com/MessageKit/MessageKit/releases/tag/1.0.0-beta.1)
+
+### Added
+
+- **Breaking Change** Added new `MessagesDataSource` delegate methods, `numberOfSections(in)` and `numberOfItems(inSection:in)`.
+[#601](https://github.com/MessageKit/MessageKit/pull/601) by [@SD10](https://github.com/sd10), [@zhongwuzw](https://github.com/zhongwuzw).
+
+- **Breaking Change** Added new protocol `MediaItem` as the associated value for the
+`MessageData.video` and `MessageData.photo` cases.
+[#587](https://github.com/MessageKit/MessageKit/pull/587) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Added new protocol `LocationItem` as the associated value for
+the `MessageData.location` case.
+[#587](https://github.com/MessageKit/MessageKit/pull/587) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Added new `DetectorType` called `.transitInformation`  to message label.
+[#520](https://github.com/MessageKit/MessageKit/pull/520) by [@nosarj](https://github.com/nosarj).
+
+- **Breaking Change** Added `.custom(Any?)` case to `MessageData`.
+[#498](https://github.com/MessageKit/MessageKit/pull/498) by [@SD10](https://github.com/SD10).
+
+- **Breaking Change** Added `.messageLabelTop` case to `AvatarPosition.Vertical` enum.
+[#596](https://github.com/MessageKit/MessageKit/pull/596) by [@zhongwuzw](https://github.com/zhongwuzw)
+
+- Added `CellSizeCalculator` protocol that is responsible for sizing and configuring attributes of a  `MessageCollectionViewCell`.
+[#579](https://github.com/MessageKit/MessageKit/pull/579) by [@SD10](https://github.com/SD10).
+
+- Added `MessageSizeCalculator`, `MediaMessageSizeCalculator`, `TextMessageSizeCalculator`, and `LocationMessageSizeCalculator`
+classes that are responsible for sizing the `MessagesCollectionViewCell` types provided by MessageKit.
+[#579](https://github.com/MessageKit/MessageKit/pull/579) by [@SD10](https://github.com/sd10).
+
+- Added three new methods `cellTopLabelHeight(for:at:in)`, `messageTopLabelHeight(for:at:in)`, and `messageBottomLabelHeight(for:at:in)` to `MessagesLayoutDelegate`.
+[#580](https://github.com/MessageKit/MessageKit/pull/580) by [@SD10](https://github.com/sd10).
+
+- Added new class `InsetLabel`.
+[#580](https://github.com/MessageKit/MessageKit/pull/580) by [@SD10](https://github.com/sd10).
+
+- Added new method `configureMediaMessageImageView(_:for:at:in)` to configure the `UIImageView` of a
+`MediaMessageCell` asynchronously.
+[#592](https://github.com/MessageKit/MessageKit/pull/592) by [@zhongwuzw](https://github.com/zhongwuzw), [@SD10](https://github.com/sd10)
+
+- Added new `MessageContentCell` class and `MessageReusableView` class.
+[#596](https://github.com/MessageKit/MessageKit/pull/596) by [@SD10](https://github.com/sd10).
+
+### Changed
+
+- **Breaking Change** Renamed `MessageData` enum to `MessageKind` and changed `MessageType`'s `data` property name to `kind`.
+ [#658](https://github.com/MessageKit/MessageKit/658) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- **Breaking Change** Changed the `messageFooterView(for:in)` and `messageHeaderView(for:in)` methods of
+`MessagesDisplayDelegate` by removing the `message` parameter.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Changed the `footerViewSize(for:in)` and `headerViewSize(for:in)` methods of `MessagesLayoutDelegate`
+by removing the `MessageType` and `IndexPath` parameters and replacing them with a new `section: Int` parameter.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** The reuse identifiers of all `MessageReusableView`s and `MessageCollectionViewCell`s have been 
+changed to match their class name exactly.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** `MessageHeaderView` and `MessageFooterView` now subclass `MessageReusableView` class.
+[#596](https://github.com/MessageKit/MessageKit/pull/596) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Renamed `MessageCollectionViewCell` to `MessageContentCell`. 
+The `MessageCollectionViewCell` class is now a bare bones subclass. 
+[#596](https://github.com/MessageKit/MessageKit/pull/596) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Changed `LabelAlignment` to be a `struct` with properties of 
+`textAlignment: NSTextAlignment` and `textInsets: UIEdgeInsets` to position the text in the `cellTopLabel` and `cellBottomLabel`.
+[#580](https://github.com/MessageKit/MessageKit/pull/580) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** The type of `cellTopLabel` and `cellBottomLabel` has been changed to `InsetLabel`.
+[#580](https://github.com/MessageKit/MessageKit/pull/580) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Renamed `cellTopLabel` to `messageTopLabel` and renamed `cellBottomLabel` to `messageBottomLabel`.
+[#659](https://github.com/MessageKit/MessageKit/pull/659) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Renamed the `didTapTopLabel` and `didTapBottomLabel` methods of `MessageCellDelegate` to `didTapMessageTopLabel` and `didTapMessageBottomLabel`.
+[#659](https://github.com/MessageKit/MessageKit/pull/659) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Renamed `cellBottomLabelAttributedText` method of `MessagesDataSource` to `messageBottomLabelAttributedText`.
+[#659](https://github.com/MessageKit/MessageKit/pull/659) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- The `MessageData.emoji` case no longer uses a default font of 2x the `messageLabelFont` size.
+You must now set this font explicitly through the `emojiMessageSizeCalculator` on `MessagesCollectionViewFlowLayout`.
+[#530](https://github.com/MessageKit/MessageKit/pull/579) by [@SD10](https://github.com/sd10).
+
+- Changed the `contentMode` of the `UIImageView` for `MediaMessageCell` to be `.scaleAspectFill`.
+[#587](https://github.com/MessageKit/MessageKit/pull/587) by [@SD10](https://github.com/sd10).
+
+- The result of the `MessagesDisplayDelegate` method `textColor(for message:...)` no longer applies to `.attributedText` case of `MessageData`.
+[#625](https://github.com/MessageKit/MessageKit/pull/625) by [@cwalo](https://github.com/cwalo).
+
+- Removed the explicit height constraint from the `separatorLine` in `MessageInputBar`.
+[#667](https://github.com/MessageKit/MessageKit/pull/667) by [@zhongwuzw](https://github.com/zhongwuzw)
+
+### Removed
+
+- **Breaking Change** Removed `NSLayoutConstraintSet` by changing access control from `public` to `internal`.
+[#607](https://github.com/MessageKit/MessageKit/pull/607) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- **Breaking Change** Removed the `showsDateHeaderAfterTimeInterval` property of `MessagesCollectionView`.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed the `reuseIdentifer` method from `MessageCollectionViewCell`, `TextMessageCell`,
+`LocationMessageCell`, `MediaMessageCell`, and `MessageContentCell`.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed the `CollectionViewReusable` protocol.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed `MessageHeaderView` and `MessageFooterView` in favor of `MessageReusableView`.
+[#615](https://github.com/MessageKit/MessageKit/pull/615) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed `numberOfMessages(in)` method of `MessagesDataSource`, instead please use `numberOfSections(in)` and `numberOfItems(inSection:in)`.
+[#601](https://github.com/MessageKit/MessageKit/pull/601) by [@SD10](https://github.com/sd10), [@zhongwuzw](https://github.com/zhongwuzw).
+
+- **Breaking Change** Removed the `messageLabelFont` property from `MessagesCollectionViewFlowLayout`.
+You can now set this property through `textMessageSizeCalculator` property.
+[#579](https://github.com/MessageKit/MessageKit/pull/579) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed `MessageDateHeaderView` class in favor of using `cellTopLabel`.
+[#659](https://github.com/MessageKit/MessageKit/pull/659) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+### Fixed
+
+- Fixed equality checking on `MessagesCollectionViewLayoutAttributes`.
+[#593](https://github.com/MessageKit/MessageKit/pull/593) by [@zhongwuzw](https://github.com/zhongwuzw), [@SD10](https://github.com/sd10)
+
+## [[Prerelease] 0.13.5](https://github.com/MessageKit/MessageKit/releases/tag/0.13.5)
+
+### Fixed
+
+- Fixed `MessageLabel` touch location offset calculation.
+[#664](https://github.com/MessageKit/MessageKit/pull/664) by [@austinwright](https://github.com/austinwright).
+
+## [[Prerelease] 0.13.4](https://github.com/MessageKit/MessageKit/releases/tag/0.13.4)
+
+### Fixed
+
+- Fixed `bubbleTailOutline` invalidation of message bubble.
+[#633](https://github.com/MessageKit/MessageKit/pull/633) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `boundingRect(with:options:attributes:context)` wrong size calculation when use some font, e.g. custom font.
+[#645](https://github.com/MessageKit/MessageKit/pull/645) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+## [[Prerelease] 0.13.3](https://github.com/MessageKit/MessageKit/releases/tag/0.13.3)
+
+### Fixed
+
+- Fixed font invalidation of `attributedString` in `MessageLabel`.
+[#623](https://github.com/MessageKit/MessageKit/pull/623) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+## [[Prerelease] 0.13.2](https://github.com/MessageKit/MessageKit/releases/tag/0.13.2)
+
+### Added
+
+- Added `shouldManageSendButtonEnabledState` to `MessageInputBar` to disable automatically managing `MessageInputBar.sendButton`'s
+ `isEnabled` state when text changes. (Default value is `true`).
+[#530](https://github.com/MessageKit/MessageKit/pull/530) by [@clayellis](https://github.com/clayellis).
+
+### Fixed
+
+- Fixed wrong separated components in messageInputBar.
+[#577](https://github.com/MessageKit/MessageKit/pull/577) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+## [[Prerelease] 0.13.1](https://github.com/MessageKit/MessageKit/releases/tag/0.13.1)
+
+### Fixed
+
+- Optimize `collectionView` scroll behavior when abruptly stops scrolling.
+[#470](https://github.com/MessageKit/MessageKit/pull/470) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `messageInputBar` sendButton not disabled in some situations.
+[#475](https://github.com/MessageKit/MessageKit/pull/475) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed message bubble tail orientation invalidation in `iOS9`.
+[#469](https://github.com/MessageKit/MessageKit/pull/469) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+## [[Prerelease] 0.13.0](https://github.com/MessageKit/MessageKit/releases/tag/0.13.0)
+
+### Fixed
+
+- Fixed message rendering when `MessagesViewController` sliding back.
+[#454](https://github.com/MessageKit/MessageKit/pull/454) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `iPhoneX` `MessageInputBar` transparent bottom area when `keyboardDismissMode` is `interactive`.
+[#425](https://github.com/MessageKit/MessageKit/pull/425) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed wrong `contentInset` calculation when `navigationBar` is `hidden`
+[#444](https://github.com/MessageKit/MessageKit/pull/444) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+### Added
+
+- Added `configureAvatarView(_ avatarView: AvatarView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView)` method in `MessagesDisplayDelegate` `protocol` to configure `avatarView`.
+[#416](https://github.com/MessageKit/MessageKit/pull/416) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Added copy support for image, text, and emoji messages.
+[#418](https://github.com/MessageKit/MessageKit/pull/418) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Added `UIImage` paste support to the `InputTextView`. Images can easily be accessed using the `InputTextView.images` property. 
+See the example project for an updated use case.  
+[#423](https://github.com/MessageKit/MessageKit/pull/423) by [@nathantannar4](https://github.com/nathantannar4).
+
+### Removed
+
+- **Breaking Change** Removed `avatar(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView)` method of `MessagesDataSource`, use `configureAvatarView(_ avatarView: AvatarView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView)` instead.
+[#416](https://github.com/MessageKit/MessageKit/pull/416) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+### Changed
+
+- **Breaking Change** Moved the `handleTapGesture(_ gesture: UIGestureRecognizer)` method from `MessagesCollectionViewCell` to `MessagesCollectionView`.
+[#417](https://github.com/MessageKit/MessageKit/pull/417) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- **Breaking Change** Changed `AvatarView` from type `UIView` to type `UIImageView`.
+ [#417](https://github.com/MessageKit/MessageKit/pull/417) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+
+## [[Prerelease] 0.12.1](https://github.com/MessageKit/MessageKit/releases/tag/0.12.1)
+
+### Fixed
+
+- Fixed `LocationMessageCell` reuse bug, to avoid inconsistency when get capture image asynchronously. 
+[#428](https://github.com/MessageKit/MessageKit/pull/428) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `MessageLabel` detector attributes not being applied due to early exit.
+[#429](https://github.com/MessageKit/MessageKit/pull/429) by [@antoinelamy](https://github.com/antoinelamy).
+
+## [[Prerelease] 0.12.0](https://github.com/MessageKit/MessageKit/releases/tag/0.12.0)
+
+### Added
+
+- Added `reloadDataAndKeepOffset()` method to `MessagesCollectionView` to maintain the current position
+when reloading data.
+[#284](https://github.com/MessageKit/MessageKit/pull/284) by [@azurechen](https://github.com/azurechen).
+
+- Added `maintainPositionOnKeyboardFrameChanged: Bool` property to maintain the current position of the 
+`MessagesCollectionView` when the height of the `MessageInputBar` changes.
+[#340](https://github.com/MessageKit/MessageKit/pull/340) by [@KEN-chan](https://github.com/KEN-chan).
+
+- Added `detectorAttributes(for:and:at:)` method to `MessagesDisplayDelegate` allowing `DetectorType`
+attributes to be set outside of the cell.
+[#397](https://github.com/MessageKit/MessageKit/pull/397) by [@SD10](https://github.com/sd10).
+
+### Fixed
+
+- Fixed `indexPathForLastItem` bug when `numberOfSections` equal to 1. 
+[#395](https://github.com/MessageKit/MessageKit/issues/395) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `scrollToBottom(animated:)` not work in some situations.
+[#395](https://github.com/MessageKit/MessageKit/issues/395) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+- Fixed `.attributedText(NSAttributedString)` messages that were not using the `textColor` from the
+`MessagesDisplayDelegate` method.
+[#414](https://github.com/MessageKit/MessageKit/issues/414) by [@SD10](https://github.com/sd10).
+
+- Fixed a bug where new messages using `.attributedText(NSAttributedString)` have the incorrect font.
+[#412](https://github.com/MessageKit/MessageKit/issues/412) by [@SD10](https://github.com/sd10).
+
+
+### Changed
+
+- **Breaking Change** The `MessageLabel` properties `addressAttributes`, `dateAttributes`, `phoneNumberAttributes`,
+and `urlAttributes` are now read only. Please use `setAttributes(_:detector:)` to set these properties. 
+[#397](https://github.com/MessageKit/MessageKit/pull/397) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Removed the generic constraint `<ContentView: UIView>` from `MessageCollectionViewCell`.
+[#391](https://github.com/MessageKit/MessageKit/pull/391) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** The `contentView` property has been renamed to `imageView` for `LocationMessageCell` and `MediaMessageCell`
+and `messageLabel` for `TextMessageCell`.
+[#391](https://github.com/MessageKit/MessageKit/pull/391) by [@SD10](https://github.com/sd10).
+
+- **Breaking Change** Changed the name of  `MessageInputBar`'s property `maxHeight` to `maxTextViewHeight` as the property is the max height the `InputTextView` can have, not the `MessageInputBar` itself.
+[#380](https://github.com/MessageKit/MessageKit/pull/380) by [@nathantannar4](https://github.com/nathantannar4).
+
+- **Breaking Change**  Adds a new view `contentView` of type `UIView` to the MessageInputBar to hold the main subviews of the `MessageInputBar`. Reduces complexity of constraints for easier testing/debugging.
+[#384](https://github.com/MessageKit/MessageKit/pull/384) by [@nathantannar4](https://github.com/nathantannar4).
+
+### Removed
+
+- **Breaking Change** Removed `scrollsToBottomOnFirstLayout` flag of `MessagesViewController`.
+[#395](https://github.com/MessageKit/MessageKit/pull/395) by [@zhongwuzw](https://github.com/zhongwuzw).
+
+## [[Prerelease] 0.11.0](https://github.com/MessageKit/MessageKit/releases/tag/0.11.0)
+
 ### Added
 
 - **Breaking Change** Added a top `InputStackView` to `MessageInputBar`. This adds the addition of the `.top` case to `InputStackView.Position`.
@@ -14,6 +301,10 @@ The changelog for `MessageKit`. Also see the [releases](https://github.com/Messa
 - **Breaking Change** Added `AvatarPosition` and `avatarPosition(for:at:in)` to configure an
 `AvatarView`'s vertical and horizontal position in a `MessageCollectionViewCell`.
 [#322](https://github.com/MessageKit/MessageKit/pull/322) by [@SD10](https://github.com/sd10).
+
+- Added `shouldCacheLayoutAttributes(for:MessageType)-> Bool` method to `MessagesLayoutDelegate`
+to manage whether a `MessageType`'s layout information is cached or not.
+[#364](https://github.com/MessageKit/MessageKit/pull/322) by [@SD10](https://github.com/sd10).
 
 ### Changed
 
@@ -35,6 +326,9 @@ and the initializer has changed from `public init(image: UIImage? = nil, initals
 
 - Fixes infinite loop when dismissing keyboard on iPhone X.
 [#350](https://github.com/MessageKit/MessageKit/pull/350) by [@nathantannar4](https://github.com/nathantannar4).
+
+- Fixed incorrect sizing of `cellTopLabel` and `cellBottomLabel`.
+[#371](https://github.com/MessageKit/MessageKit/pull/371/commits/949796d68d175d2f2c8700ed0cb769935aee2184) by [@SD10](https://github.com/sd10).
 
 ### Removed
 

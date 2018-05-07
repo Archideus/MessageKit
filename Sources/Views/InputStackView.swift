@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -46,7 +46,7 @@ open class InputStackView: UIStackView {
     
     // MARK: Initialization
     
-    convenience init(axis: UILayoutConstraintAxis, spacing: CGFloat) {
+    public convenience init(axis: UILayoutConstraintAxis, spacing: CGFloat) {
         self.init(frame: .zero)
         self.axis = axis
         self.spacing = spacing

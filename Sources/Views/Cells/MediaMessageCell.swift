@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,48 +24,56 @@
 
 import UIKit
 
-open class MediaMessageCell: MessageCollectionViewCell<UIImageView> {
-    open override class func reuseIdentifier() -> String { return "messagekit.cell.mediamessage" }
+/// A subclass of `MessageContentCell` used to display video and audio messages.
+open class MediaMessageCell: MessageContentCell {
 
-    // MARK: - Properties
-
+    /// The play button view to display on video messages.
     open lazy var playButtonView: PlayButtonView = {
         let playButtonView = PlayButtonView()
-        playButtonView.frame.size = CGSize(width: 35, height: 35)
         return playButtonView
+    }()
+
+    /// The image view display the media content.
+    open var imageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFill
+        return imageView
     }()
 
     // MARK: - Methods
 
-    private func setupConstraints() {
-        playButtonView.translatesAutoresizingMaskIntoConstraints = false
-
-        let centerX = playButtonView.centerXAnchor.constraint(equalTo: messageContainerView.centerXAnchor)
-        let centerY = playButtonView.centerYAnchor.constraint(equalTo: messageContainerView.centerYAnchor)
-        let width = playButtonView.widthAnchor.constraint(equalToConstant: playButtonView.bounds.width)
-        let height = playButtonView.heightAnchor.constraint(equalToConstant: playButtonView.bounds.height)
-
-        NSLayoutConstraint.activate([centerX, centerY, width, height])
+    /// Responsible for setting up the constraints of the cell's subviews.
+    open func setupConstraints() {
+        imageView.fillSuperview()
+        playButtonView.centerInSuperview()
+        playButtonView.constraint(equalTo: CGSize(width: 35, height: 35))
     }
 
-    override func setupSubviews() {
+    open override func setupSubviews() {
         super.setupSubviews()
-        messageContentView.addSubview(playButtonView)
+        messageContainerView.addSubview(imageView)
+        messageContainerView.addSubview(playButtonView)
         setupConstraints()
     }
 
     open override func configure(with message: MessageType, at indexPath: IndexPath, and messagesCollectionView: MessagesCollectionView) {
         super.configure(with: message, at: indexPath, and: messagesCollectionView)
-        switch message.data {
-        case .photo(let image):
-            messageContentView.image = image
+
+        guard let displayDelegate = messagesCollectionView.messagesDisplayDelegate else {
+            fatalError(MessageKitError.nilMessagesDisplayDelegate)
+        }
+
+        switch message.kind {
+        case .photo(let mediaItem):
+            imageView.image = mediaItem.image ?? mediaItem.placeholderImage
             playButtonView.isHidden = true
-        case .video(_, let image):
-            messageContentView.image = image
+        case .video(let mediaItem):
+            imageView.image = mediaItem.image ?? mediaItem.placeholderImage
             playButtonView.isHidden = false
         default:
             break
         }
-    }
 
+        displayDelegate.configureMediaMessageImageView(imageView, for: message, at: indexPath, in: messagesCollectionView)
+    }
 }

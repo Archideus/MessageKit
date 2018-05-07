@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
 
 import UIKit
 
-open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
+open class MessageLabel: UILabel {
 
     // MARK: - Private Properties
 
@@ -59,31 +59,31 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
 
     open var enabledDetectors: [DetectorType] = [] {
         didSet {
-            setTextStorage(shouldParse: true)
+            setTextStorage(attributedText, shouldParse: true)
         }
     }
 
     open override var attributedText: NSAttributedString? {
         didSet {
-            setTextStorage(shouldParse: true)
+            setTextStorage(attributedText, shouldParse: true)
         }
     }
 
     open override var text: String? {
         didSet {
-            setTextStorage(shouldParse: true)
+            setTextStorage(attributedText, shouldParse: true)
         }
     }
 
     open override var font: UIFont! {
         didSet {
-            setTextStorage(shouldParse: false)
+            setTextStorage(attributedText, shouldParse: false)
         }
     }
 
     open override var textColor: UIColor! {
         didSet {
-            setTextStorage(shouldParse: false)
+            setTextStorage(attributedText, shouldParse: false)
         }
     }
 
@@ -103,7 +103,7 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
 
     open override var textAlignment: NSTextAlignment {
         didSet {
-            setTextStorage(shouldParse: false)
+            setTextStorage(attributedText, shouldParse: false)
         }
     }
 
@@ -112,32 +112,46 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
             if !isConfiguring { setNeedsDisplay() }
         }
     }
+    
+    internal var messageLabelFont: UIFont?
 
-    open var addressAttributes: [NSAttributedStringKey: Any] = [:] {
-        didSet {
-            updateAttributes(for: .address)
-            if !isConfiguring { setNeedsDisplay() }
+    private var attributesNeedUpdate = false
+
+    public static var defaultAttributes: [NSAttributedStringKey: Any] = {
+        return [
+            NSAttributedStringKey.foregroundColor: UIColor.darkText,
+            NSAttributedStringKey.underlineStyle: NSUnderlineStyle.styleSingle.rawValue,
+            NSAttributedStringKey.underlineColor: UIColor.darkText
+        ]
+    }()
+
+    open internal(set) var addressAttributes: [NSAttributedStringKey: Any] = defaultAttributes
+
+    open internal(set) var dateAttributes: [NSAttributedStringKey: Any] = defaultAttributes
+
+    open internal(set) var phoneNumberAttributes: [NSAttributedStringKey: Any] = defaultAttributes
+
+    open internal(set) var urlAttributes: [NSAttributedStringKey: Any] = defaultAttributes
+    
+    open internal(set) var transitInformationAttributes: [NSAttributedStringKey: Any] = defaultAttributes
+
+    public func setAttributes(_ attributes: [NSAttributedStringKey: Any], detector: DetectorType) {
+        switch detector {
+        case .phoneNumber:
+            phoneNumberAttributes = attributes
+        case .address:
+            addressAttributes = attributes
+        case .date:
+            dateAttributes = attributes
+        case .url:
+            urlAttributes = attributes
+        case .transitInformation:
+            transitInformationAttributes = attributes
         }
-    }
-
-    open var dateAttributes: [NSAttributedStringKey: Any] = [:] {
-        didSet {
-            updateAttributes(for: .date)
-            if !isConfiguring { setNeedsDisplay() }
-        }
-    }
-
-    open var phoneNumberAttributes: [NSAttributedStringKey: Any] = [:] {
-        didSet {
-            updateAttributes(for: .phoneNumber)
-            if !isConfiguring { setNeedsDisplay() }
-        }
-    }
-
-    open var urlAttributes: [NSAttributedStringKey: Any] = [:] {
-        didSet {
-            updateAttributes(for: .url)
-            if !isConfiguring { setNeedsDisplay() }
+        if isConfiguring {
+            attributesNeedUpdate = true
+        } else {
+            updateAttributes(for: [detector])
         }
     }
 
@@ -145,24 +159,8 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
 
     public override init(frame: CGRect) {
         super.init(frame: frame)
-
-        // Message Label Specific
         self.numberOfLines = 0
         self.lineBreakMode = .byWordWrapping
-
-        let defaultAttributes: [NSAttributedStringKey: Any] = [
-          NSAttributedStringKey.foregroundColor: self.textColor,
-          NSAttributedStringKey.underlineStyle: NSUnderlineStyle.styleSingle.rawValue,
-          NSAttributedStringKey.underlineColor: self.textColor
-        ]
-
-        self.addressAttributes = defaultAttributes
-        self.dateAttributes = defaultAttributes
-        self.phoneNumberAttributes = defaultAttributes
-        self.urlAttributes = defaultAttributes
-
-        setupGestureRecognizers()
-
     }
 
     public required init?(coder aDecoder: NSCoder) {
@@ -188,63 +186,28 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
     public func configure(block: () -> Void) {
         isConfiguring = true
         block()
+        if attributesNeedUpdate {
+            updateAttributes(for: enabledDetectors)
+        }
+        attributesNeedUpdate = false
         isConfiguring = false
         setNeedsDisplay()
     }
 
-    // MARK: UIGestureRecognizer Delegate
-
-    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        return true
-    }
-
-    //swiftlint:disable cyclomatic_complexity
-    // Yeah we're disabling this because the whole file is a mess :D
-    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-
-        let touchLocation = touch.location(in: self)
-
-        switch true {
-        case gestureRecognizer.view != self.superview && gestureRecognizer.view != self:
-            return true
-        case gestureRecognizer.view == self.superview:
-            guard let index = stringIndex(at: touchLocation) else { return true }
-            for (_, ranges) in rangesForDetectors {
-                for (nsRange, _) in ranges {
-                  guard let range = Range(nsRange) else { return true }
-                    if range.contains(index) { return false }
-                }
-            }
-            return true
-        case gestureRecognizer.view == self:
-            guard let index = stringIndex(at: touchLocation) else { return false }
-            for (_, ranges) in rangesForDetectors {
-                for (nsRange, _) in ranges {
-                    guard let range = Range(nsRange) else { return false }
-                    if range.contains(index) { return true }
-                }
-            }
-            return false
-        default:
-            return true
-        }
-
-    }
-
     // MARK: - Private Methods
 
-    private func setTextStorage(shouldParse: Bool) {
+    private func setTextStorage(_ newText: NSAttributedString?, shouldParse: Bool) {
 
-        guard let attributedText = attributedText, attributedText.length > 0 else {
+        guard let newText = newText, newText.length > 0 else {
             textStorage.setAttributedString(NSAttributedString())
             setNeedsDisplay()
             return
         }
         
-        let style = paragraphStyle(for: attributedText)
-        let range = NSRange(location: 0, length: attributedText.length)
+        let style = paragraphStyle(for: newText)
+        let range = NSRange(location: 0, length: newText.length)
         
-        let mutableText = NSMutableAttributedString(attributedString: attributedText)
+        let mutableText = NSMutableAttributedString(attributedString: newText)
         mutableText.addAttribute(.paragraphStyle, value: style, range: range)
         
         if shouldParse {
@@ -282,20 +245,22 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
         return style
     }
 
-    private func updateAttributes(for detectorType: DetectorType) {
+    private func updateAttributes(for detectors: [DetectorType]) {
 
         guard let attributedText = attributedText, attributedText.length > 0 else { return }
         let mutableAttributedString = NSMutableAttributedString(attributedString: attributedText)
 
-        guard let ranges = rangesForDetectors[detectorType] else { return }
+        for detector in detectors {
+            guard let rangeTuples = rangesForDetectors[detector] else { continue }
 
-        ranges.forEach { (range, _) in
-            let attributes = detectorAttributes(for: detectorType)
-            mutableAttributedString.addAttributes(attributes, range: range)
+            for (range, _)  in rangeTuples {
+                let attributes = detectorAttributes(for: detector)
+                mutableAttributedString.addAttributes(attributes, range: range)
+            }
+
+            let updatedString = NSAttributedString(attributedString: mutableAttributedString)
+            textStorage.setAttributedString(updatedString)
         }
-
-        textStorage.setAttributedString(mutableAttributedString)
-
     }
 
     private func detectorAttributes(for detectorType: DetectorType) -> [NSAttributedStringKey: Any] {
@@ -309,6 +274,8 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
             return phoneNumberAttributes
         case .url:
             return urlAttributes
+        case .transitInformation:
+            return transitInformationAttributes
         }
 
     }
@@ -323,8 +290,10 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
             return phoneNumberAttributes
         case .link:
             return urlAttributes
+        case .transitInformation:
+            return transitInformationAttributes
         default:
-            fatalError("Received an unrecognized NSTextCheckingResult.CheckingType")
+            fatalError(MessageKitError.unrecognizedCheckingResult)
         }
     }
 
@@ -365,6 +334,12 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
                 let tuple: (NSRange, MessageTextCheckingType) = (result.range, .link(result.url))
                 ranges.append(tuple)
                 rangesForDetectors.updateValue(ranges, forKey: .url)
+            case .transitInformation:
+                var ranges = rangesForDetectors[.transitInformation] ?? []
+                let tuple: (NSRange, MessageTextCheckingType) = (result.range, .transitInfoComponents(result.components))
+                ranges.append(tuple)
+                rangesForDetectors.updateValue(ranges, forKey: .transitInformation)
+
             default:
                 fatalError("Received an unrecognized NSTextCheckingResult.CheckingType")
             }
@@ -379,10 +354,9 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
         guard textStorage.length > 0 else { return nil }
 
         var location = location
-        let textOffset = CGPoint(x: textInsets.left, y: textInsets.right)
 
-        location.x -= textOffset.x
-        location.y -= textOffset.y
+        location.x -= textInsets.left
+        location.y -= textInsets.top
 
         let index = layoutManager.glyphIndex(for: location, in: textContainer)
 
@@ -398,32 +372,19 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
 
     }
 
-    private func setupGestureRecognizers() {
+  internal func handleGesture(_ touchLocation: CGPoint) -> Bool {
 
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleGesture(_:)))
-        addGestureRecognizer(tapGesture)
-        tapGesture.delegate = self
-
-        let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleGesture(_:)))
-        addGestureRecognizer(longPressGesture)
-        longPressGesture.delegate = self
-
-        isUserInteractionEnabled = true
-    }
-
-  @objc func handleGesture(_ gesture: UIGestureRecognizer) {
-
-        let touchLocation = gesture.location(ofTouch: 0, in: self)
-        guard let index = stringIndex(at: touchLocation) else { return }
+        guard let index = stringIndex(at: touchLocation) else { return false }
 
         for (detectorType, ranges) in rangesForDetectors {
-            for (nsRange, value) in ranges {
-                guard let range = Range(nsRange) else { return }
+            for (range, value) in ranges {
                 if range.contains(index) {
                     handleGesture(for: detectorType, value: value)
+                    return true
                 }
             }
         }
+        return false
     }
 
     private func handleGesture(for detectorType: DetectorType, value: MessageTextCheckingType) {
@@ -445,6 +406,13 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
         case let .link(url):
             guard let url = url else { return }
             handleURL(url)
+        case let .transitInfoComponents(transitInformation):
+            var transformedTransitInformation = [String: String]()
+            guard let transitInformation = transitInformation else { return }
+            transitInformation.forEach { (key, value) in
+                transformedTransitInformation[key.rawValue] = value
+            }
+            handleTransitInformation(transformedTransitInformation)
         }
     }
     
@@ -464,11 +432,16 @@ open class MessageLabel: UILabel, UIGestureRecognizerDelegate {
         delegate?.didSelectPhoneNumber(phoneNumber)
     }
     
+    private func handleTransitInformation(_ components: [String: String]) {
+        delegate?.didSelectTransitInformation(components)
+    }
+    
 }
 
-fileprivate enum MessageTextCheckingType {
+private enum MessageTextCheckingType {
     case addressComponents([NSTextCheckingKey: String]?)
     case date(Date?)
     case phoneNumber(String?)
     case link(URL?)
+    case transitInfoComponents([NSTextCheckingKey: String]?)
 }

@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,19 +22,12 @@
  SOFTWARE.
  */
 
-import UIKit
+import Foundation
 
-open class MessageFooterView: UICollectionReusableView, CollectionViewReusable {
-    open class func reuseIdentifier() -> String { return "messagekit.footer.base" }
-
-    // MARK: - Initializers
-
-    public override init(frame: CGRect) {
-        super.init(frame: frame)
-    }
-
-    public required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+extension CGRect {
+    
+    internal init(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) {
+        self.init(x: x, y: y, width: w, height: h)
     }
 
 }

@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ import UIKit
 
 extension UIView {
     
-    func fillSuperview() {
+    internal func fillSuperview() {
         guard let superview = self.superview else {
             return
         }
@@ -41,8 +41,31 @@ extension UIView {
 	    NSLayoutConstraint.activate(constraints)
     }
 
+    internal func centerInSuperview() {
+        guard let superview = self.superview else {
+            return
+        }
+        translatesAutoresizingMaskIntoConstraints = false
+        let constraints: [NSLayoutConstraint] = [
+            centerXAnchor.constraint(equalTo: superview.centerXAnchor),
+            centerYAnchor.constraint(equalTo: superview.centerYAnchor)
+        ]
+        NSLayoutConstraint.activate(constraints)
+    }
+    
+    internal func constraint(equalTo size: CGSize) {
+        guard superview != nil else { return }
+        translatesAutoresizingMaskIntoConstraints = false
+        let constraints: [NSLayoutConstraint] = [
+            widthAnchor.constraint(equalToConstant: size.width),
+            heightAnchor.constraint(equalToConstant: size.height)
+        ]
+        NSLayoutConstraint.activate(constraints)
+        
+    }
+
     @discardableResult
-    func addConstraints(_ top: NSLayoutYAxisAnchor? = nil, left: NSLayoutXAxisAnchor? = nil, bottom: NSLayoutYAxisAnchor? = nil, right: NSLayoutXAxisAnchor? = nil, topConstant: CGFloat = 0, leftConstant: CGFloat = 0, bottomConstant: CGFloat = 0, rightConstant: CGFloat = 0, widthConstant: CGFloat = 0, heightConstant: CGFloat = 0) -> [NSLayoutConstraint] {
+    internal func addConstraints(_ top: NSLayoutYAxisAnchor? = nil, left: NSLayoutXAxisAnchor? = nil, bottom: NSLayoutYAxisAnchor? = nil, right: NSLayoutXAxisAnchor? = nil, topConstant: CGFloat = 0, leftConstant: CGFloat = 0, bottomConstant: CGFloat = 0, rightConstant: CGFloat = 0, widthConstant: CGFloat = 0, heightConstant: CGFloat = 0) -> [NSLayoutConstraint] {
         
         if self.superview == nil {
             return []

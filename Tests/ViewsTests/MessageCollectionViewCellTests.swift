@@ -1,7 +1,7 @@
 /*
  MIT License
  
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -25,14 +25,14 @@
 import XCTest
 @testable import MessageKit
 
-class MessageCollectionViewCellTests: XCTestCase {
+final class MessageContentCellTests: XCTestCase {
 
-    var cell: MessageCollectionViewCell<UIView>!
+    var cell: MessageContentCell!
     let frame = CGRect(x: 0, y: 0, width: 100, height: 100)
 
     override func setUp() {
         super.setUp()
-        cell = MessageCollectionViewCell(frame: frame)
+        cell = MessageContentCell(frame: frame)
     }
 
     override func tearDown() {
@@ -42,8 +42,11 @@ class MessageCollectionViewCellTests: XCTestCase {
 
     func testInit() {
         XCTAssertEqual(cell.contentView.autoresizingMask, [.flexibleWidth, .flexibleHeight])
-        XCTAssertEqual(cell.contentView.subviews, [cell.cellTopLabel, cell.messageContainerView, cell.avatarView, cell.cellBottomLabel])
-        XCTAssertEqual(cell.messageContainerView.subviews, [cell.messageContentView])
+        XCTAssert(cell.contentView.subviews.contains(cell.cellTopLabel))
+        XCTAssert(cell.contentView.subviews.contains(cell.messageBottomLabel))
+        XCTAssert(cell.contentView.subviews.contains(cell.avatarView))
+        XCTAssert(cell.contentView.subviews.contains(cell.messageContainerView))
+
     }
 
     func testMessageContainerViewPropertiesSetup() {
@@ -51,17 +54,12 @@ class MessageCollectionViewCellTests: XCTestCase {
         XCTAssertTrue(cell.messageContainerView.layer.masksToBounds)
     }
 
-    func testMessageContentViewPropertiesSetup() {
-        XCTAssertTrue(cell.messageContentView.clipsToBounds)
-        XCTAssertTrue(cell.messageContentView.isUserInteractionEnabled)
-    }
-
     func testPrepareForReuse() {
         cell.prepareForReuse()
         XCTAssertNil(cell.cellTopLabel.text)
         XCTAssertNil(cell.cellTopLabel.attributedText)
-        XCTAssertNil(cell.cellBottomLabel.text)
-        XCTAssertNil(cell.cellBottomLabel.attributedText)
+        XCTAssertNil(cell.messageBottomLabel.text)
+        XCTAssertNil(cell.messageBottomLabel.attributedText)
     }
 
     func testApplyLayoutAttributes() {
@@ -69,16 +67,20 @@ class MessageCollectionViewCellTests: XCTestCase {
         cell.apply(layoutAttributes)
 
         XCTAssertEqual(cell.avatarView.frame, layoutAttributes.frame)
-        XCTAssertEqual(cell.messageContainerView.frame, layoutAttributes.messageContainerFrame)
-        XCTAssertEqual(cell.messageContentView.frame, cell.messageContainerView.frame)
-        XCTAssertEqual(cell.cellTopLabel.frame, layoutAttributes.topLabelFrame)
-        XCTAssertEqual(cell.cellBottomLabel.frame, layoutAttributes.bottomLabelFrame)
+        XCTAssertEqual(cell.messageContainerView.frame.size, layoutAttributes.messageContainerSize)
+        XCTAssertEqual(cell.cellTopLabel.frame.size, layoutAttributes.cellTopLabelSize)
+        XCTAssertEqual(cell.messageBottomLabel.frame.size, layoutAttributes.messageBottomLabelSize)
     }
 
 }
 
-extension MessageCollectionViewCellTests {
+extension MessageContentCellTests {
 
-    fileprivate class MockMessagesDisplayDelegate: MessagesDisplayDelegate { }
+    fileprivate class MockMessagesDisplayDelegate: MessagesDisplayDelegate {
+        
+        func snapshotOptionsForLocation(message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> LocationMessageSnapshotOptions {
+            return LocationMessageSnapshotOptions()
+        }
+    }
 
 }

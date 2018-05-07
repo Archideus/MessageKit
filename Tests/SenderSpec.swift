@@ -1,7 +1,7 @@
 /*
  MIT License
 
- Copyright (c) 2017 MessageKit
+ Copyright (c) 2017-2018 MessageKit
 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -22,28 +22,28 @@
  SOFTWARE.
  */
 
-import UIKit
+import Quick
+import Nimble
+@testable import MessageKit
 
-open class MessageDateHeaderView: MessageHeaderView {
-    open override class func reuseIdentifier() -> String { return "messagekit.header.date" }
+final class SenderSpec: QuickSpec {
 
-    // MARK: - Properties
-
-    open let dateLabel = UILabel()
-
-    // MARK: - Initializers
-
-    public override init(frame: CGRect) {
-        super.init(frame: frame)
-        addSubview(dateLabel)
-        dateLabel.fillSuperview()
-        dateLabel.textAlignment = .center
-        dateLabel.font = .boldSystemFont(ofSize: 10)
-        dateLabel.textColor = .darkGray
+    override func spec() {
+        describe("equality between two Senders") {
+            context("they have the same id ") {
+                it("should be equal") {
+                    let sender1 = Sender(id: "1", displayName: "Steven")
+                    let sender2 = Sender(id: "1", displayName: "Nathan")
+                    expect(sender1).to(equal(sender2))
+                }
+            }
+            context("they have a different id") {
+                it("should not be equal") {
+                    let sender1 = Sender(id: "1", displayName: "Steven")
+                    let sender2 = Sender(id: "2", displayName: "Nathan")
+                    expect(sender1).toNot(equal(sender2))
+                }
+            }
+        }
     }
-    
-    public required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
 }
